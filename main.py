@@ -2,6 +2,7 @@ from flask import Flask
 from flask import render_template
 from flask import request
 from flask import redirect
+import bcrypt
 import user_management as dbHandler
 
 # Code snippet for logging a message
@@ -43,14 +44,24 @@ def signup():
         chars = list(password)
         to_replace = ["<", ">", ";"]
         replacements = ["%3C", "%3E", "%3B"]
-        char_list = list(input_string)
+        char_list = list(password)
         for i in range(len(char_list)):
             if char_list[i] in to_replace:
                 index = to_replace.index(char_list[i])
                 char_list[i] = replacements[index]
-            if len(password) < 8 or len(password) > 12:
-                return render_template("/signup.html")
+            if char_list[i].isalpha:
+                sum_alpha += 1
+            if char_list[i].isnumeric:
+                sum_num += 1
+        if len(password) < 8 or len(password) > 12:
+            return render_template("/signup.html")
+        if sum_num > 4:
+            return render_template("/signup.html")
+        if sum_alpha > 5:
+            return render_template("/signup.html")
         DoB = request.form["dob"]
+        salt = bcrypt.gensalt()
+        password = password.hashpw(password, salt)
         dbHandler.insertUser(username, password, DoB)
         return render_template("/index.html")
     else: #catchall, no exception handling#
