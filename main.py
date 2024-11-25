@@ -20,6 +20,16 @@ def addFeedback():
         return redirect(url, code=302)
     if request.method == "POST":
         feedback = request.form["feedback"]
+        sum_num = 0
+        sum_alpha = 0
+        to_replace = ["<", ">", ";"]
+        replacements = ["%3C", "%3E", "%3B"]
+        char_list = list(feedback)
+        for i in range(len(char_list)):
+            if char_list[i] in to_replace:
+                index = to_replace.index(char_list[i])
+                char_list[i] = replacements[index]
+        feedback = "".join(char_list)
         dbHandler.insertFeedback(feedback)
         dbHandler.listFeedback()
         return render_template("/success.html", state=True, value="Back")
@@ -39,26 +49,7 @@ def signup():
         #sanitize here#
         username = request.form["username"]
         password = request.form["password"]
-        sum_num = 0
-        sum_alpha = 0
-        chars = list(password)
-        to_replace = ["<", ">", ";"]
-        replacements = ["%3C", "%3E", "%3B"]
-        char_list = list(password)
-        for i in range(len(char_list)):
-            if char_list[i] in to_replace:
-                index = to_replace.index(char_list[i])
-                char_list[i] = replacements[index]
-            if char_list[i].isalpha:
-                sum_alpha += 1
-            if char_list[i].isnumeric:
-                sum_num += 1
-        if len(password) < 8 or len(password) > 12:
-            return render_template("/signup.html")
-        if sum_num > 4:
-            return render_template("/signup.html")
-        if sum_alpha > 5:
-            return render_template("/signup.html")
+        
         DoB = request.form["dob"]
         salt = bcrypt.gensalt()
         password = password.hashpw(password, salt)
@@ -88,7 +79,6 @@ def home():
             password = ''.join(chars)
         if len(password) < 8 or len(password) > 12:
             return render_template("/index.html")
-
         isLoggedIn = dbHandler.retrieveUsers(username, password)
         if isLoggedIn:
             dbHandler.listFeedback()
