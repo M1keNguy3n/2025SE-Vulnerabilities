@@ -91,7 +91,6 @@ def validate_number(number: str) -> bool:
         return False
     return True
 
-
 # Function to salt a hash input
 def salt_and_hash(password: str) -> bytes:
     return  # to be implemented
