@@ -4,12 +4,17 @@ from flask import request
 from flask import redirect
 import bcrypt
 import user_management as dbHandler
-
+import helper as h
+import pyotp
+import pyqrcode
+import os
+import base64
+from io import BytesIO
 # Code snippet for logging a message
 # app.logger.critical("message")
 
 app = Flask(__name__)
-
+app.secret_key = 'my_secret_key'
 # no rate limiter #
 # no csp #
 @app.route("/success.html", methods=["POST", "GET", "PUT", "PATCH", "DELETE"])
@@ -20,16 +25,7 @@ def addFeedback():
         return redirect(url, code=302)
     if request.method == "POST":
         feedback = request.form["feedback"]
-        sum_num = 0
-        sum_alpha = 0
-        to_replace = ["<", ">", ";"]
-        replacements = ["%3C", "%3E", "%3B"]
-        char_list = list(feedback)
-        for i in range(len(char_list)):
-            if char_list[i] in to_replace:
-                index = to_replace.index(char_list[i])
-                char_list[i] = replacements[index]
-        feedback = "".join(char_list)
+        feedback = h.sanitize(feedback)
         dbHandler.insertFeedback(feedback)
         dbHandler.listFeedback()
         return render_template("/success.html", state=True, value="Back")
@@ -49,10 +45,11 @@ def signup():
         #sanitize here#
         username = request.form["username"]
         password = request.form["password"]
-        
+        username = h.sanitize(username)
+        password = h.sanitize(password)
+        if not h.validate(password):
+            return render_template("/signup.html")
         DoB = request.form["dob"]
-        salt = bcrypt.gensalt()
-        password = password.hashpw(password, salt)
         dbHandler.insertUser(username, password, DoB)
         return render_template("/index.html")
     else: #catchall, no exception handling#
@@ -64,20 +61,16 @@ def signup():
 # too many methods #
 @app.route("/", methods=["POST", "GET"])
 def home():
+    user_secret = pyotp.random_base32()
     if request.method == "GET" and request.args.get("url"):
         url = request.args.get("url", "")
         return redirect(url, code=302)
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        sum_num = 0
-        sum_alpha = 0
-        chars = list(password)
-        for i, j in enumerate(chars):
-            if not j.isalnum():
-                chars[i].replace(j, j.decode(encoding = "utf-8"))
-            password = ''.join(chars)
-        if len(password) < 8 or len(password) > 12:
+        username = h.sanitize(username)
+        password = h.sanitize(password)
+        if not h.validate(password):
             return render_template("/index.html")
         isLoggedIn = dbHandler.retrieveUsers(username, password)
         if isLoggedIn:
