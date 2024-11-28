@@ -14,7 +14,7 @@ from io import BytesIO
 # app.logger.critical("message")
 
 app = Flask(__name__)
-app.secret_key = 'my_secret_key'
+app.secret_key = 'supersecurekey'
 # no rate limiter #
 # no csp #
 @app.route("/success.html", methods=["POST", "GET", "PUT", "PATCH", "DELETE"])
